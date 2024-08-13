@@ -5,7 +5,7 @@ export const handleInput = (command: string, args?: string[]): void => {
   if (handler) {
     handler(args)
   } else {
-    console.log(`Command ${command} not recognized`)
+    console.log(`Command "${command}" not recognized`)
     console.log(`Available commands: ${Object.values(Command).join(', ')}`)
   }
 }
