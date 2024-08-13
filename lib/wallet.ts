@@ -2,27 +2,25 @@ import 'dotenv/config'
 import bs58 from 'bs58'
 import { addKeypairToEnvFile } from '@solana-developers/helpers'
 import {
-  Connection,
-  Keypair,
-  LAMPORTS_PER_SOL,
-  PublicKey,
-  sendAndConfirmTransaction,
-  SystemProgram,
-  Transaction
+    Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, sendAndConfirmTransaction, SystemProgram,
+    Transaction
 } from '@solana/web3.js'
 
 export const generateKeypair = async (): Promise<void> => {
   const keypair = Keypair.generate()
   await addKeypairToEnvFile(keypair, 'SECRET_KEY', '.env')
+
   console.log(`Public key: `, keypair.publicKey.toBase58())
   console.log(`Private key: `, keypair.secretKey)
   console.log(`Private key encoded: `, bs58.encode(keypair.secretKey))
   console.log(`✅ Finished!`)
 }
 
-export const loadKeypair = (): Keypair => {
+export const getKeypairFromEnv = (): Keypair => {
   const secret = Uint8Array.from(JSON.parse(process.env.SECRET_KEY!))
   const keypair = Keypair.fromSecretKey(secret)
+  // @TODO seems like this helper function doesn't work correctly on current version of solana-developers/helpers
+  // const keypair = getKeypairFromEnvironment("SECRET_KEY");
   console.log(`Public key: ${keypair.publicKey.toBase58()}`)
   console.log(`✅ Finished! We've loaded our secret key securely, using an env file!`)
 
@@ -35,7 +33,9 @@ export const getBalance = async (walletAddress: string): Promise<void> => {
   }
 
   const mainnetRpcUrl = process.env.DEVNET_RPC_URL!
+
   console.log(`🔗 Connecting to ${mainnetRpcUrl}...`)
+
   const connection = new Connection(mainnetRpcUrl, 'confirmed')
   const publicKey = new PublicKey(walletAddress)
   const balanceInLamports = await connection.getBalance(publicKey)
@@ -50,7 +50,7 @@ export const transfer = async (walletAddress: string, amount: number): Promise<v
     process.exit(1)
   }
 
-  const senderKeypair = loadKeypair()
+  const senderKeypair = getKeypairFromEnv()
 
   console.log(`suppliedToPubkey: ${walletAddress}`)
 
@@ -60,9 +60,7 @@ export const transfer = async (walletAddress: string, amount: number): Promise<v
   console.log(`✅ Loaded our own keypair, the destination public key, and connected to Solana`)
 
   const transaction = new Transaction()
-
   const LAMPORTS_TO_SEND = amount * LAMPORTS_PER_SOL
-
   const sendSolInstruction = SystemProgram.transfer({
     fromPubkey: senderKeypair.publicKey,
     toPubkey,

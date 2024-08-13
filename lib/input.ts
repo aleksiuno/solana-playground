@@ -1,11 +1,4 @@
-import { generateKeypair, getBalance, loadKeypair, transfer } from './services'
-
-const commandHandlers: { [key: string]: (arg?: string[]) => void } = {
-  generateKeypair: () => generateKeypair(),
-  keypair: () => loadKeypair(),
-  balance: arg => getBalance(arg![0]),
-  transfer: arg => transfer(arg![0], Number(arg![1]))
-}
+import { Command, commandHandlers } from './command'
 
 export const handleInput = (command: string, args?: string[]): void => {
   const handler = commandHandlers[command]
@@ -13,6 +6,7 @@ export const handleInput = (command: string, args?: string[]): void => {
     handler(args)
   } else {
     console.log(`Command ${command} not recognized`)
+    console.log(`Available commands: ${Object.values(Command).join(', ')}`)
   }
 }
 

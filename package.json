@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "npx esrun send-solana.ts",
+    "solana": "npx esrun solana.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
