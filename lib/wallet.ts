@@ -1,12 +1,13 @@
 import 'dotenv/config'
 import bs58 from 'bs58'
 import { addKeypairToEnvFile } from '@solana-developers/helpers'
-import {
+import web3, {
     Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, sendAndConfirmTransaction, SystemProgram,
     Transaction
 } from '@solana/web3.js'
 
 export const generateKeypair = async (): Promise<void> => {
+  const cluster = process.env.CLUSTER! as web3.Cluster
   const keypair = Keypair.generate()
   await addKeypairToEnvFile(keypair, 'SECRET_KEY', '.env')
   const publicKey = keypair.publicKey.toBase58()
@@ -16,11 +17,12 @@ export const generateKeypair = async (): Promise<void> => {
   console.log(`Private key encoded: `, bs58.encode(keypair.secretKey))
   console.log(`✅ Finished!`)
   console.log(
-    `You can find more details about wallet here 👉 https://explorer.solana.com/address/${publicKey}?cluster=devnet`
+    `You can find more details about wallet here 👉 https://explorer.solana.com/address/${publicKey}?cluster=${cluster}`
   )
 }
 
 export const getKeypairFromEnv = (): Keypair => {
+  const cluster = process.env.CLUSTER! as web3.Cluster
   const secret = Uint8Array.from(JSON.parse(process.env.SECRET_KEY!))
   const keypair = Keypair.fromSecretKey(secret)
   const publicKey = keypair.publicKey.toBase58()
@@ -29,7 +31,7 @@ export const getKeypairFromEnv = (): Keypair => {
   console.log(`Public key: ${publicKey}`)
   console.log(`✅ Finished! We've loaded our secret key securely, using an env file!`)
   console.log(
-    `You can find more details about wallet here 👉 https://explorer.solana.com/address/${publicKey}?cluster=devnet`
+    `You can find more details about wallet here 👉 https://explorer.solana.com/address/${publicKey}?cluster=${cluster}`
   )
   return keypair
 }
@@ -39,7 +41,8 @@ export const getBalance = async (walletAddress: string): Promise<void> => {
     throw new Error('Provide a public key to check the balance of!')
   }
 
-  const mainnetRpcUrl = process.env.DEVNET_RPC_URL!
+  const mainnetRpcUrl = process.env.RPC_URL!
+  const cluster = process.env.CLUSTER! as web3.Cluster
 
   console.log(`🔗 Connecting to ${mainnetRpcUrl}...`)
 
@@ -50,7 +53,7 @@ export const getBalance = async (walletAddress: string): Promise<void> => {
 
   console.log(`✅ Finished! The balance for the wallet at address ${publicKey} is ${balanceInSOL}!`)
   console.log(
-    `You can find more details about wallet here 👉 https://explorer.solana.com/address/${publicKey}?cluster=devnet`
+    `You can find more details about wallet here 👉 https://explorer.solana.com/address/${publicKey}?cluster=${cluster}`
   )
 }
 
@@ -66,21 +69,52 @@ export const transfer = async (walletAddress: string, amount: number): Promise<v
 
   console.log(`✅ Loaded our own keypair, the destination public key, and connected to Solana`)
 
-  const transaction = new Transaction()
-  const LAMPORTS_TO_SEND = amount * LAMPORTS_PER_SOL
-  const sendSolInstruction = SystemProgram.transfer({
-    fromPubkey: senderKeypair.publicKey,
-    toPubkey,
-    lamports: LAMPORTS_TO_SEND
-  })
+  const transaction = new Transaction().add(
+    SystemProgram.transfer({
+      fromPubkey: senderKeypair.publicKey,
+      toPubkey,
+      lamports: amount * LAMPORTS_PER_SOL
+    })
+  )
 
-  transaction.add(sendSolInstruction)
+  await processTransaction(transaction, connection)
+}
+
+export const ping = async (): Promise<void> => {
+  const cluster = process.env.CLUSTER! as web3.Cluster
+  const connection = new web3.Connection(web3.clusterApiUrl(cluster))
+  const PING_PROGRAM_ADDRESS = new web3.PublicKey('ChT1B39WKLS8qUrkLvFDXMhEJ4F1XZzwUNHUt4AU9aVa')
+  const PING_PROGRAM_DATA_ADDRESS = new web3.PublicKey('Ah9K7dQ8EHaZqcAsgBW8w37yN2eAy3koFmUn4x3CJtod')
+  const transaction = new web3.Transaction()
+  const programId = new web3.PublicKey(PING_PROGRAM_ADDRESS)
+  const pingProgramDataId = new web3.PublicKey(PING_PROGRAM_DATA_ADDRESS)
+
+  transaction.add(
+    new web3.TransactionInstruction({
+      keys: [
+        {
+          pubkey: pingProgramDataId,
+          isSigner: false,
+          isWritable: true
+        }
+      ],
+      programId
+    })
+  )
+
+  processTransaction(transaction, connection)
+}
+
+const processTransaction = async (transaction: Transaction, connection: Connection): Promise<void> => {
+  const cluster = process.env.CLUSTER! as web3.Cluster
+  const senderKeypair = getKeypairFromEnv()
+
+  console.log(`✅ Loaded our own keypair, the destination public key, and connected to Solana`)
 
   const signature = await sendAndConfirmTransaction(connection, transaction, [senderKeypair])
 
-  console.log(`💸 Finished! Sent ${amount}SOL to the address ${toPubkey}. `)
   console.log(`Transaction signature is ${signature}!`)
   console.log(
-    `You can find more details about transaction here 👉 https://explorer.solana.com/tx/${signature}?cluster=devnet`
+    `You can find more details about transaction here 👉 https://explorer.solana.com/tx/${signature}?cluster=${cluster}`
   )
 }
