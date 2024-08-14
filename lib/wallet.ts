@@ -65,9 +65,6 @@ export const transfer = async (walletAddress: string, amount: number): Promise<v
 
   const senderKeypair = getKeypairFromEnv()
   const toPubkey = new PublicKey(walletAddress)
-  const connection = new Connection('https://api.devnet.solana.com', 'confirmed')
-
-  console.log(`✅ Loaded our own keypair, the destination public key, and connected to Solana`)
 
   const transaction = new Transaction().add(
     SystemProgram.transfer({
@@ -77,17 +74,13 @@ export const transfer = async (walletAddress: string, amount: number): Promise<v
     })
   )
 
-  await processTransaction(transaction, connection)
+  await processTransaction(transaction)
 }
 
 export const ping = async (): Promise<void> => {
-  const cluster = process.env.CLUSTER! as web3.Cluster
-  const connection = new web3.Connection(web3.clusterApiUrl(cluster))
-  const PING_PROGRAM_ADDRESS = new web3.PublicKey('ChT1B39WKLS8qUrkLvFDXMhEJ4F1XZzwUNHUt4AU9aVa')
-  const PING_PROGRAM_DATA_ADDRESS = new web3.PublicKey('Ah9K7dQ8EHaZqcAsgBW8w37yN2eAy3koFmUn4x3CJtod')
   const transaction = new web3.Transaction()
-  const programId = new web3.PublicKey(PING_PROGRAM_ADDRESS)
-  const pingProgramDataId = new web3.PublicKey(PING_PROGRAM_DATA_ADDRESS)
+  const programId = new web3.PublicKey('ChT1B39WKLS8qUrkLvFDXMhEJ4F1XZzwUNHUt4AU9aVa')
+  const pingProgramDataId = new web3.PublicKey('Ah9K7dQ8EHaZqcAsgBW8w37yN2eAy3koFmUn4x3CJtod')
 
   transaction.add(
     new web3.TransactionInstruction({
@@ -102,15 +95,13 @@ export const ping = async (): Promise<void> => {
     })
   )
 
-  processTransaction(transaction, connection)
+  processTransaction(transaction)
 }
 
-const processTransaction = async (transaction: Transaction, connection: Connection): Promise<void> => {
+const processTransaction = async (transaction: Transaction): Promise<void> => {
   const cluster = process.env.CLUSTER! as web3.Cluster
+  const connection = new web3.Connection(web3.clusterApiUrl(cluster))
   const senderKeypair = getKeypairFromEnv()
-
-  console.log(`✅ Loaded our own keypair, the destination public key, and connected to Solana`)
-
   const signature = await sendAndConfirmTransaction(connection, transaction, [senderKeypair])
 
   console.log(`Transaction signature is ${signature}!`)
